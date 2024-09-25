@@ -126,12 +126,12 @@ def calculatedResults(mean_returns, cov_matrix):
         
     max_SR_returns, max_SR_std = round(max_SR_returns*100,2), round(max_SR_std*100,2)
     min_volatility_returns, min_volatility_std = round(min_volatility_returns*100,2), round(min_volatility_std*100,2)
-    return max_SR_returns, max_SR_std, max_SR_allocation, min_volatility_returns, min_volatility_std, min_volatility_allocation, efficient_list, target_returns
+    return max_SR_results, max_SR_returns, max_SR_std, max_SR_allocation, min_volatility_results, min_volatility_returns, min_volatility_std, min_volatility_allocation, efficient_list, target_returns
 
 
 def efficientFrontierGraph(mean_returns, cov_matrix):
     """Return a grpah of the efficient frontier"""
-    max_SR_returns, max_SR_std, max_SR_allocation, min_volatility_returns, min_volatility_std, min_volatility_allocation, efficient_list, target_returns = calculatedResults(mean_returns, cov_matrix)
+    max_SR_results, max_SR_returns, max_SR_std, max_SR_allocation, min_volatility_results, min_volatility_returns, min_volatility_std, min_volatility_allocation, efficient_list, target_returns = calculatedResults(mean_returns, cov_matrix)
 
     #Max SR
     max_SR = go.Scatter(
@@ -177,11 +177,34 @@ def efficientFrontierGraph(mean_returns, cov_matrix):
     return fig.show()
 
 
+def resultsTable(mean_returns, cov_matrix):
+    max_SR_results, max_SR_returns, max_SR_std, max_SR_allocation, min_volatility_results, min_volatility_returns, min_volatility_std, min_volatility_allocation, efficient_list, target_returns = calculatedResults(mean_returns, cov_matrix)
+    index = ['Maximum Sharpe Ratio', 'Minimum volatility']
+    columns = ['Sharpe Ratio', 'Returns (%)', 'Voltatility (%)'] + TICKERS
+    results = pd.DataFrame(columns=columns, index=index)
+
+    results.loc['Maximum Sharpe Ratio', 'Sharpe Ratio'] = max_SR_results['fun']
+    results.loc['Maximum Sharpe Ratio', 'Returns (%)'] = max_SR_returns
+    results.loc['Maximum Sharpe Ratio', 'Voltatility (%)'] = max_SR_std
+    for ticker in TICKERS:
+        results.loc['Maximum Sharpe Ratio', ticker] = max_SR_allocation.loc[ticker, 'allocation']
+
+    results.loc['Minimum volatility', 'Sharpe Ratio'] = min_volatility_results['fun']
+    results.loc['Minimum volatility', 'Returns (%)'] = min_volatility_returns
+    results.loc['Minimum volatility', 'Voltatility (%)'] = min_volatility_std
+    for ticker in TICKERS:
+        results.loc['Minimum volatility', ticker] = min_volatility_allocation.loc[ticker, 'allocation']
+    return results
+
+
 mean_returns, cov_matrix = getData(TICKERS, START_DATE, END_DATE)
 # max_sharpe_ratio_results = maximumSharpeRatio(mean_returns, cov_matrix, risk_free_rate=RISK_FREE_RATE)
 # print(max_sharpe_ratio_results)
 # returns, std = portfolioPerformance(max_sharpe_ratio_results['x'], mean_returns, cov_matrix)
-# print(calculatedResults(mean_returns, cov_matrix))
+# max_SR_returns, max_SR_std, max_SR_allocation, min_volatility_returns, min_volatility_std, min_volatility_allocation, efficient_list, target_returns = calculatedResults(mean_returns, cov_matrix)
+# print(max_SR_allocation.columns)
 
 # print(efficientOptimization(mean_returns, cov_matrix, TARGET))
-efficientFrontierGraph(mean_returns, cov_matrix)
+# efficientFrontierGraph(mean_returns, cov_matrix)
+
+print(resultsTable(mean_returns, cov_matrix))
