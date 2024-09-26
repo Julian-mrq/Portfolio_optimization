@@ -1,19 +1,31 @@
-# Libraries
+##############################
+#          Libraries         #
+##############################
+
 import numpy as np
 import datetime as dt
 import yfinance as yf
 from scipy.optimize import minimize
 import pandas as pd
 import plotly.graph_objects as go
+import matplotlib.pyplot as plt
 
-# Parameters
+##############################
+#         Parameters         #
+##############################
+
 TICKERS = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'NVDA', 'JPM', 'V', 'JNJ']
-END_DATE = '2023-12-31'
 START_DATE = '2020-01-01'
+END_DATE = '2023-12-31'
 N_TRADING_DAYS = 252
 RISK_FREE_RATE = 0.015
 CONSTRAINT_SET = (0,1) # no short, we can have 100% of the same asset
 TARGET = 0.06
+
+
+##############################
+#            Code            #
+##############################
 
 def getData(stocks, start, end):
     """Import the data"""
@@ -31,14 +43,14 @@ def portfolioPerformance(weights, mean_returns, cov_matrix):
     return returns, std
 
 
-def negSharpeRatio(weights, mean_returns, cov_matrix, risk_free_rate = RISK_FREE_RATE): # and then take the min of the negative to get the max SR
+def negSharpeRatio(weights, mean_returns, cov_matrix, risk_free_rate): # and then take the min of the negative to get the max SR
     """Compute the negative Sharpe ratio"""
     returns, std = portfolioPerformance(weights, mean_returns, cov_matrix)
     sharpe_ratio = (returns - risk_free_rate)/std
     return -sharpe_ratio
 
 
-def maximumSharpeRatio(mean_returns, cov_matrix, risk_free_rate = RISK_FREE_RATE, constraint_set = CONSTRAINT_SET):
+def maximumSharpeRatio(mean_returns, cov_matrix, risk_free_rate, constraint_set):
     """Compute the results with the highest Sharpe Ratio"""
     num_assets = len(mean_returns)
     args = (mean_returns, cov_matrix, risk_free_rate)
@@ -62,7 +74,7 @@ def portfolioVariance(weights, mean_returns, cov_matrix):
     return portfolioPerformance(weights, mean_returns, cov_matrix)[1]
 
 
-def minimumVariance(mean_returns, cov_matrix, constraint_set = CONSTRAINT_SET):
+def minimumVariance(mean_returns, cov_matrix, constraint_set):
     """Compute the portfolio with minimum variance"""
     num_assets = len(mean_returns)
     args = (mean_returns, cov_matrix)
@@ -85,7 +97,7 @@ def portfolioReturn(weights, mean_returns, cov_matrix):
     return portfolioPerformance(weights, mean_returns, cov_matrix)[0]
 
 
-def efficientOptimization(mean_returns, cov_matrix, return_target, constraint_set = CONSTRAINT_SET):
+def efficientOptimization(mean_returns, cov_matrix, return_target, constraint_set):
     """Optimize the portfolio for a target"""
     num_assets = len(mean_returns)
     args = (mean_returns, cov_matrix)
@@ -103,16 +115,16 @@ def efficientOptimization(mean_returns, cov_matrix, return_target, constraint_se
     return eff_opt
 
 
-def calculatedResults(mean_returns, cov_matrix):
+def calculatedResults(mean_returns, cov_matrix, risk_free_rate, constraint_set):
     """Compute all the results and the number of shares for each stock """
     #Max Sharpe ratio portfolio
-    max_SR_results = maximumSharpeRatio(mean_returns, cov_matrix)
+    max_SR_results = maximumSharpeRatio(mean_returns, cov_matrix, risk_free_rate, constraint_set)
     max_SR_returns, max_SR_std = portfolioPerformance(max_SR_results['x'], mean_returns, cov_matrix)
     max_SR_allocation = pd.DataFrame(max_SR_results['x'], index=mean_returns.index, columns=['allocation'])
     max_SR_allocation.allocation = [round(i*100,0) for i in max_SR_allocation.allocation]
 
     #MIn volatility portfolio
-    min_volatility_results = minimumVariance(mean_returns, cov_matrix)
+    min_volatility_results = minimumVariance(mean_returns, cov_matrix, constraint_set)
     min_volatility_returns, min_volatility_std = portfolioPerformance(min_volatility_results['x'], mean_returns, cov_matrix)
     min_volatility_allocation = pd.DataFrame(min_volatility_results['x'], index=mean_returns.index, columns=['allocation'])
     min_volatility_allocation.allocation = [round(i*100,0) for i in min_volatility_allocation.allocation]
@@ -122,16 +134,16 @@ def calculatedResults(mean_returns, cov_matrix):
     target_returns = np.linspace(min_volatility_returns, max_SR_returns, 20)
     
     for target in target_returns:
-        efficient_list.append(efficientOptimization(mean_returns, cov_matrix, target)['fun'])
+        efficient_list.append(efficientOptimization(mean_returns, cov_matrix, target, constraint_set)['fun'])
         
     max_SR_returns, max_SR_std = round(max_SR_returns*100,2), round(max_SR_std*100,2)
     min_volatility_returns, min_volatility_std = round(min_volatility_returns*100,2), round(min_volatility_std*100,2)
     return max_SR_results, max_SR_returns, max_SR_std, max_SR_allocation, min_volatility_results, min_volatility_returns, min_volatility_std, min_volatility_allocation, efficient_list, target_returns
 
 
-def efficientFrontierGraph(mean_returns, cov_matrix):
+def efficientFrontierGraph(mean_returns, cov_matrix, risk_free_rate, constraint_set):
     """Return a grpah of the efficient frontier"""
-    max_SR_results, max_SR_returns, max_SR_std, max_SR_allocation, min_volatility_results, min_volatility_returns, min_volatility_std, min_volatility_allocation, efficient_list, target_returns = calculatedResults(mean_returns, cov_matrix)
+    max_SR_results, max_SR_returns, max_SR_std, max_SR_allocation, min_volatility_results, min_volatility_returns, min_volatility_std, min_volatility_allocation, efficient_list, target_returns = calculatedResults(mean_returns, cov_matrix, risk_free_rate, constraint_set)
 
     #Max SR
     max_SR = go.Scatter(
@@ -177,8 +189,9 @@ def efficientFrontierGraph(mean_returns, cov_matrix):
     return fig.show()
 
 
-def resultsTable(mean_returns, cov_matrix, tickers):
-    max_SR_results, max_SR_returns, max_SR_std, max_SR_allocation, min_volatility_results, min_volatility_returns, min_volatility_std, min_volatility_allocation, efficient_list, target_returns = calculatedResults(mean_returns, cov_matrix)
+def resultsTable(mean_returns, cov_matrix, tickers, risk_free_rate, constraint_set):
+    """Display a table for the max SR and the min volatility with the returns, the volatility, SR and the allocation"""
+    max_SR_results, max_SR_returns, max_SR_std, max_SR_allocation, min_volatility_results, min_volatility_returns, min_volatility_std, min_volatility_allocation, efficient_list, target_returns = calculatedResults(mean_returns, cov_matrix, risk_free_rate, constraint_set)
     index = ['Maximum Sharpe Ratio', 'Minimum volatility']
     columns = ['Sharpe Ratio', 'Returns (%)', 'Voltatility (%)'] + tickers
     results = pd.DataFrame(columns=columns, index=index)
@@ -197,14 +210,16 @@ def resultsTable(mean_returns, cov_matrix, tickers):
     return results
 
 
-mean_returns, cov_matrix = getData(TICKERS, START_DATE, END_DATE)
-# max_sharpe_ratio_results = maximumSharpeRatio(mean_returns, cov_matrix, risk_free_rate=RISK_FREE_RATE)
-# print(max_sharpe_ratio_results)
-# returns, std = portfolioPerformance(max_sharpe_ratio_results['x'], mean_returns, cov_matrix)
-# max_SR_returns, max_SR_std, max_SR_allocation, min_volatility_returns, min_volatility_std, min_volatility_allocation, efficient_list, target_returns = calculatedResults(mean_returns, cov_matrix)
-# print(max_SR_allocation.columns)
+def pieChart(results, tickers):
+    """Display the pie charts of stocks allocations of the max SR and min volatility"""
+    labels = tickers
+    max_SR_sizes = results.loc['Maximum Sharpe Ratio', tickers]
+    min_vol_sizes = results.loc['Minimum volatility', tickers]
 
-# print(efficientOptimization(mean_returns, cov_matrix, TARGET))
-# efficientFrontierGraph(mean_returns, cov_matrix)
-
-print(resultsTable(mean_returns, cov_matrix, TICKERS))
+    fig1, ax1 = plt.subplots()
+    ax1.pie(max_SR_sizes, labels=labels, autopct='%1.1f%%', startangle=90)
+    ax1.axis('equal')
+    fig2, ax2 = plt.subplots()
+    ax2.pie(min_vol_sizes, labels=labels, autopct='%1.1f%%', startangle=90)
+    ax2.axis('equal')
+    return fig1, fig2
