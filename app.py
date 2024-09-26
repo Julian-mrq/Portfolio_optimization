@@ -16,7 +16,8 @@ target = st.number_input("Risk-Free Rate", value=po.TARGET, format="%.3f")
 tickers = st.multiselect("Select the tickers", po.TICKERS)
 
 if(st.button("Calculate the results")):
-    st.text("Calculation...")
+    mean_returns, cov_matrix = po.getData(tickers, start_date, end_date)
+    st.table(po.resultsTable(mean_returns, cov_matrix, tickers))
 else:
     st.text("Press the button to calculate the optimized Portfolio values")
 
