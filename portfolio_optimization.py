@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 
 TICKERS = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'NVDA', 'JPM', 'V', 'JNJ']
 START_DATE = '2020-01-01'
-END_DATE = '2023-12-31'
+END_DATE = dt.datetime.now()
 N_TRADING_DAYS = 252
 RISK_FREE_RATE = 0.015
 CONSTRAINT_SET = (0,1) # no short, we can have 100% of the same asset
