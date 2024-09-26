@@ -177,22 +177,22 @@ def efficientFrontierGraph(mean_returns, cov_matrix):
     return fig.show()
 
 
-def resultsTable(mean_returns, cov_matrix):
+def resultsTable(mean_returns, cov_matrix, tickers):
     max_SR_results, max_SR_returns, max_SR_std, max_SR_allocation, min_volatility_results, min_volatility_returns, min_volatility_std, min_volatility_allocation, efficient_list, target_returns = calculatedResults(mean_returns, cov_matrix)
     index = ['Maximum Sharpe Ratio', 'Minimum volatility']
-    columns = ['Sharpe Ratio', 'Returns (%)', 'Voltatility (%)'] + TICKERS
+    columns = ['Sharpe Ratio', 'Returns (%)', 'Voltatility (%)'] + tickers
     results = pd.DataFrame(columns=columns, index=index)
 
     results.loc['Maximum Sharpe Ratio', 'Sharpe Ratio'] = max_SR_results['fun']
     results.loc['Maximum Sharpe Ratio', 'Returns (%)'] = max_SR_returns
     results.loc['Maximum Sharpe Ratio', 'Voltatility (%)'] = max_SR_std
-    for ticker in TICKERS:
+    for ticker in tickers:
         results.loc['Maximum Sharpe Ratio', ticker] = max_SR_allocation.loc[ticker, 'allocation']
 
     results.loc['Minimum volatility', 'Sharpe Ratio'] = min_volatility_results['fun']
     results.loc['Minimum volatility', 'Returns (%)'] = min_volatility_returns
     results.loc['Minimum volatility', 'Voltatility (%)'] = min_volatility_std
-    for ticker in TICKERS:
+    for ticker in tickers:
         results.loc['Minimum volatility', ticker] = min_volatility_allocation.loc[ticker, 'allocation']
     return results
 
@@ -207,4 +207,4 @@ mean_returns, cov_matrix = getData(TICKERS, START_DATE, END_DATE)
 # print(efficientOptimization(mean_returns, cov_matrix, TARGET))
 # efficientFrontierGraph(mean_returns, cov_matrix)
 
-print(resultsTable(mean_returns, cov_matrix))
+print(resultsTable(mean_returns, cov_matrix, TICKERS))
