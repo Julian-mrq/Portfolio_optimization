@@ -9,12 +9,14 @@ from scipy.optimize import minimize
 import pandas as pd
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
+import companies as co
+
 
 ##############################
 #         Parameters         #
 ##############################
 
-TICKERS = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'NVDA', 'JPM', 'V', 'JNJ']
+TICKERS = [ticker for sector in co.companies.values() for ticker in sector.values()]
 START_DATE = '2020-01-01'
 END_DATE = dt.datetime.now()
 N_TRADING_DAYS = 252
