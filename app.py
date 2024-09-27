@@ -3,20 +3,41 @@ import pandas as pd
 import portfolio_optimization as po
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
+import companies as co
 
 st.set_page_config(page_title="Portfolio Optimization")
 
 st.header("Portfolio optimization")
-st.subheader("Using the Modern Portfolio theory")
+st.text("Using the Modern Portfolio theory")
+st.text("")
+st.text("")
+st.text("")
 
 # Parameters
-st.header("Input parameters")
-start_date = st.date_input("Start date", pd.to_datetime(po.START_DATE))
-end_date = st.date_input("End date", pd.to_datetime(po.END_DATE))
-risk_free_rate = st.number_input("Risk-Free Rate", value=po.RISK_FREE_RATE, format="%.3f")
-target = st.number_input("Risk-Free Rate", value=po.TARGET, format="%.3f")
-tickers = st.multiselect("Select the tickers", po.TICKERS)
+st.subheader("Input parameters")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    start_date = st.date_input("Start date", pd.to_datetime(po.START_DATE))
+    end_date = st.date_input("End date", pd.to_datetime(po.END_DATE))
+
+with col2:
+    risk_free_rate = st.number_input("Risk-Free Rate", value=po.RISK_FREE_RATE, format="%.3f")
+    target = st.number_input("Target Rate", value=po.TARGET, format="%.3f")
+
 constraint_set = po.CONSTRAINT_SET
+
+
+companies_names = []
+name_to_ticker = {}
+for sector in co.companies.values():
+    for company, ticker in sector.items():
+        companies_names.append(company)
+        name_to_ticker[company] = ticker
+
+selected_companies = st.multiselect("Select the tickers", companies_names)
+tickers = [name_to_ticker[company] for company in selected_companies]
 
 if(st.button("Calculate the results")):
     mean_returns, cov_matrix = po.getData(tickers, start_date, end_date)
@@ -83,8 +104,3 @@ if(st.button("Calculate the results")):
     st.plotly_chart(efficient_graph)
 else:
     st.text("Press the button to calculate the optimized Portfolio values")
-
-
-
-# efficient frontier
-
