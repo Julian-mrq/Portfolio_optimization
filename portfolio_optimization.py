@@ -235,6 +235,7 @@ def pieChart(results, tickers):
     return fig1, fig2
 
 def parametricVar(returns, weights, confidence_level):
+    """Parametric VaR calculation"""
     weighted_returns = np.dot(returns, weights)
     weighted_returns = np.delete(weighted_returns, 0, 0) # delete 1st line
     mean = np.mean(weighted_returns)
@@ -243,6 +244,7 @@ def parametricVar(returns, weights, confidence_level):
     return var
 
 def historicalVar(returns, weights, confidence_level):
+    """Historical VaR calculation"""
     weighted_returns = np.dot(returns, weights)
     weighted_returns = np.delete(weighted_returns, 0, 0) # delete 1st line
     # sorted_returns = np.sort(weighted_returns)
@@ -251,6 +253,7 @@ def historicalVar(returns, weights, confidence_level):
     return var
 
 def monteCarloVar(returns, weights, confidence_level, num_simulations, time_horizon):
+    """Monte Carlo VaR calculation"""
     weighted_returns = np.dot(returns, weights)
     weighted_returns = np.delete(weighted_returns, 0, 0) # delete 1st line
     mean = np.mean(weighted_returns)

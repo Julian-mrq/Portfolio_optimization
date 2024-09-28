@@ -40,7 +40,7 @@ tickers = [name_to_ticker[company] for company in selected_companies]
 
 st.subheader("VaR parameters")
 
-col1, col2 = st.columns(2)
+col1, col2, col3 = st.columns(3)
 
 with col1:
     # Confidence level
@@ -49,20 +49,22 @@ with col1:
 
 with col2:
     # Time horizon
-    time_horizon = st.radio("Time horizon (you can choose more than 1)", po.TIME_HORIZONS)
+    time_horizon = st.radio("Time horizon", po.TIME_HORIZONS)
     time_horizon = int(time_horizon.replace(" jours", ""))
+with col3:
+    n_simulations = st.number_input("Number of simulations (Monte Carlo method)", po.N_SIMULATIONS)
 
 st.text("")
 
 if(st.button("Calculate the results")):
     # Results table
-    st.subheader("Results table")
+    st.subheader("Results")
     mean_returns, cov_matrix = po.getData(tickers, start_date, end_date)
     results = po.resultsTable(mean_returns, cov_matrix, tickers, risk_free_rate, constraint_set)
     st.table(results)
 
     # VaR results
-    st.subheader("Value at Risk table")
+    st.subheader("Values at Risk")
     index = ['Maximum Sharpe Ratio', 'Minimum volatility']
     columns = ['Parametric VaR', 'Historical VaR', 'Monte Carlo VaR']
     var = pd.DataFrame(columns=columns, index=index)
@@ -73,12 +75,12 @@ if(st.button("Calculate the results")):
     # Max Sharpe Ratio
     var.loc['Maximum Sharpe Ratio', 'Parametric VaR'] = parametric_var = po.parametricVar(returns, max_SR_weights, confidence_level)
     var.loc['Maximum Sharpe Ratio', 'Historical VaR'] = historical_var = po.historicalVar(returns, max_SR_weights, confidence_level)
-    var.loc['Maximum Sharpe Ratio', 'Monte Carlo VaR'] = montecarlo_var =  po.monteCarloVar(returns, max_SR_weights, confidence_level, po.N_SIMULATIONS, time_horizon)
+    var.loc['Maximum Sharpe Ratio', 'Monte Carlo VaR'] = montecarlo_var =  po.monteCarloVar(returns, max_SR_weights, confidence_level, n_simulations, time_horizon)
 
     #Min volatility
     var.loc['Minimum volatility', 'Parametric VaR'] = parametric_var = po.parametricVar(returns, min_var_weights, confidence_level)
     var.loc['Minimum volatility', 'Historical VaR'] = historical_var = po.historicalVar(returns, min_var_weights, confidence_level)
-    var.loc['Minimum volatility', 'Monte Carlo VaR'] = montecarlo_var =  po.monteCarloVar(returns, min_var_weights, confidence_level, po.N_SIMULATIONS, time_horizon)
+    var.loc['Minimum volatility', 'Monte Carlo VaR'] = montecarlo_var =  po.monteCarloVar(returns, min_var_weights, confidence_level, n_simulations, time_horizon)
     
     st.table(var)
 
