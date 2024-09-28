@@ -6,6 +6,7 @@ import numpy as np
 import datetime as dt
 import yfinance as yf
 from scipy.optimize import minimize
+from scipy.stats import norm
 import pandas as pd
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
@@ -21,9 +22,10 @@ START_DATE = '2020-01-01'
 END_DATE = dt.datetime.now()
 N_TRADING_DAYS = 252
 RISK_FREE_RATE = 0.015
-CONSTRAINT_SET = (0,1) # no short, we can have 100% of the same asset
+CONSTRAINT_SET = (0,0.5) # no short, we can have 50% of the same asset
 TARGET = 0.06
-
+CONFIDENCE_LEVEL = ["90 %", "95 %", "99 %"]
+TIME_HORIZONS = ["10 jours", "176 jours ", "252 jours"]
 
 ##############################
 #            Code            #
@@ -144,7 +146,7 @@ def calculatedResults(mean_returns, cov_matrix, risk_free_rate, constraint_set):
 
 
 def efficientFrontierGraph(mean_returns, cov_matrix, risk_free_rate, constraint_set):
-    """Return a grpah of the efficient frontier"""
+    """Return a graph of the efficient frontier"""
     max_SR_results, max_SR_returns, max_SR_std, max_SR_allocation, min_volatility_results, min_volatility_returns, min_volatility_std, min_volatility_allocation, efficient_list, target_returns = calculatedResults(mean_returns, cov_matrix, risk_free_rate, constraint_set)
 
     #Max SR
@@ -225,3 +227,26 @@ def pieChart(results, tickers):
     ax2.pie(min_vol_sizes, labels=labels, autopct='%1.1f%%', startangle=90)
     ax2.axis('equal')
     return fig1, fig2
+
+def parametricVar(returns, weights, confidence_level):
+    weighted_returns = np.dot(returns, weights)
+    mean = np.mean(weighted_returns)
+    std = np.std(weighted_returns)
+    var = norm.ppf(1 - confidence_level, mean, std) # include the z_score calculation
+    return var
+
+def historicalVar(returns, weights, confidence_level):
+    weighted_returns = np.dot(returns, weights)
+    # sorted_returns = np.sort(weighted_returns)
+    # index = int((1-confidence_level)*len(sorted_returns))
+    
+    var = np.percentile(weighted_returns, 100 - confidence_level * 100) # equivalent to sort and choose index + allow interpolation if percentile is between 2 values
+    return var
+
+def monteCarloVar(returns, weights, confidence_level, num_simulations):
+    simulated_returns = np.random.choice(returns, size=(num_simulations, len(returns)))
+    weighted_returns = np.dot(simulated_returns, weights)
+    sorted_returns = np.sort(weighted_returns)
+    index = int((1-confidence_level)*num_simulations)
+    var = sorted_returns[index]
+    return var
