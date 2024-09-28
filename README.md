@@ -5,8 +5,11 @@ This repository contains a Python code that creates a Streamlit app that allows 
 ## Requirements & installation
 
 Make sure to have installed the Python Packages Installer pip.
+
 Download the files in a specific folder.
+
 Libraries to download on computer : `streamlit`, `pandas`, `matplotlib`, `plotly`, `datetime`, `yfinance`, `scipy`.
+
 Write `pip install {library_name}` on your command terminal.
 
 ## Use
