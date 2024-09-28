@@ -26,6 +26,8 @@ CONSTRAINT_SET = (0,0.5) # no short, we can have 50% of the same asset
 TARGET = 0.06
 CONFIDENCE_LEVEL = ["90 %", "95 %", "99 %"]
 TIME_HORIZONS = ["10 jours", "176 jours ", "252 jours"]
+N_SIMULATIONS = 10000
+
 
 ##############################
 #            Code            #
@@ -39,6 +41,10 @@ def getData(stocks, start, end):
     cov_matrix = returns.cov()
     return mean_returns, cov_matrix
 
+def getAllReturns(stocks, start, end):
+    data = yf.download(stocks, start, end)['Adj Close']
+    returns = data.pct_change()
+    return returns
 
 def portfolioPerformance(weights, mean_returns, cov_matrix):
     """Get the returns and standard deviation of the portfolio"""
@@ -230,6 +236,7 @@ def pieChart(results, tickers):
 
 def parametricVar(returns, weights, confidence_level):
     weighted_returns = np.dot(returns, weights)
+    weighted_returns = np.delete(weighted_returns, 0, 0) # delete 1st line
     mean = np.mean(weighted_returns)
     std = np.std(weighted_returns)
     var = norm.ppf(1 - confidence_level, mean, std) # include the z_score calculation
@@ -237,16 +244,19 @@ def parametricVar(returns, weights, confidence_level):
 
 def historicalVar(returns, weights, confidence_level):
     weighted_returns = np.dot(returns, weights)
+    weighted_returns = np.delete(weighted_returns, 0, 0) # delete 1st line
     # sorted_returns = np.sort(weighted_returns)
     # index = int((1-confidence_level)*len(sorted_returns))
-    
     var = np.percentile(weighted_returns, 100 - confidence_level * 100) # equivalent to sort and choose index + allow interpolation if percentile is between 2 values
     return var
 
-def monteCarloVar(returns, weights, confidence_level, num_simulations):
-    simulated_returns = np.random.choice(returns, size=(num_simulations, len(returns)))
-    weighted_returns = np.dot(simulated_returns, weights)
-    sorted_returns = np.sort(weighted_returns)
-    index = int((1-confidence_level)*num_simulations)
-    var = sorted_returns[index]
+def monteCarloVar(returns, weights, confidence_level, num_simulations, time_horizon):
+    weighted_returns = np.dot(returns, weights)
+    weighted_returns = np.delete(weighted_returns, 0, 0) # delete 1st line
+    mean = np.mean(weighted_returns)
+    std = np.std(weighted_returns)
+    simulations = np.random.normal(mean, std, size=(num_simulations, time_horizon))
+    portfolio_values = np.cumprod(1 + simulations, axis=1)
+    portfolio_returns = (portfolio_values[:, -1] - 1)
+    var = np.percentile(portfolio_returns, 100 - confidence_level * 100)
     return var

@@ -55,11 +55,32 @@ with col2:
 st.text("")
 
 if(st.button("Calculate the results")):
-
+    # Results table
     st.subheader("Results table")
     mean_returns, cov_matrix = po.getData(tickers, start_date, end_date)
     results = po.resultsTable(mean_returns, cov_matrix, tickers, risk_free_rate, constraint_set)
     st.table(results)
+
+    # VaR results
+    st.subheader("Value at Risk table")
+    index = ['Maximum Sharpe Ratio', 'Minimum volatility']
+    columns = ['Parametric VaR', 'Historical VaR', 'Monte Carlo VaR']
+    var = pd.DataFrame(columns=columns, index=index)
+    max_SR_weights = po.maximumSharpeRatio(mean_returns, cov_matrix, risk_free_rate, constraint_set)['x']
+    min_var_weights = po.minimumVariance(mean_returns, cov_matrix, constraint_set)['x']
+    returns = po.getAllReturns(tickers, start_date, end_date)
+
+    # Max Sharpe Ratio
+    var.loc['Maximum Sharpe Ratio', 'Parametric VaR'] = parametric_var = po.parametricVar(returns, max_SR_weights, confidence_level)
+    var.loc['Maximum Sharpe Ratio', 'Historical VaR'] = historical_var = po.historicalVar(returns, max_SR_weights, confidence_level)
+    var.loc['Maximum Sharpe Ratio', 'Monte Carlo VaR'] = montecarlo_var =  po.monteCarloVar(returns, max_SR_weights, confidence_level, po.N_SIMULATIONS, time_horizon)
+
+    #Min volatility
+    var.loc['Minimum volatility', 'Parametric VaR'] = parametric_var = po.parametricVar(returns, min_var_weights, confidence_level)
+    var.loc['Minimum volatility', 'Historical VaR'] = historical_var = po.historicalVar(returns, min_var_weights, confidence_level)
+    var.loc['Minimum volatility', 'Monte Carlo VaR'] = montecarlo_var =  po.monteCarloVar(returns, min_var_weights, confidence_level, po.N_SIMULATIONS, time_horizon)
+    
+    st.table(var)
 
     # Pie charts
     labels = tickers
@@ -126,5 +147,6 @@ if(st.button("Calculate the results")):
     
     efficient_graph = go.Figure(data=data, layout=layout)
     st.plotly_chart(efficient_graph)
+
 else:
     st.write("Press the button to calculate the optimized Portfolio values")
