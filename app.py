@@ -7,9 +7,8 @@ import companies as co
 
 st.set_page_config(page_title="Portfolio Optimization")
 
-st.header("Portfolio optimization")
-st.text("Using the Modern Portfolio theory")
-st.text("")
+st.title("Portfolio optimization")
+st.write("Using the Modern Portfolio theory")
 st.text("")
 st.text("")
 
@@ -28,7 +27,7 @@ with col2:
 
 constraint_set = po.CONSTRAINT_SET
 
-
+# Tickers
 companies_names = []
 name_to_ticker = {}
 for sector in co.companies.values():
@@ -39,25 +38,50 @@ for sector in co.companies.values():
 selected_companies = st.multiselect("Select the tickers", companies_names)
 tickers = [name_to_ticker[company] for company in selected_companies]
 
+st.subheader("VaR parameters")
+
+col1, col2 = st.columns(2)
+
+with col1:
+    # Confidence level
+    confidence_level = st.radio("Confidence Level", po.CONFIDENCE_LEVEL)
+    confidence_level = float(confidence_level.replace(" %", ""))/100
+
+with col2:
+    # Time horizon
+    time_horizon = st.radio("Time horizon (you can choose more than 1)", po.TIME_HORIZONS)
+    time_horizon = int(time_horizon.replace(" jours", ""))
+
+st.text("")
+
 if(st.button("Calculate the results")):
+
+    st.subheader("Results table")
     mean_returns, cov_matrix = po.getData(tickers, start_date, end_date)
     results = po.resultsTable(mean_returns, cov_matrix, tickers, risk_free_rate, constraint_set)
     st.table(results)
 
-    # figure1, figure2 = po.pieChart(results, tickers)
+    # Pie charts
     labels = tickers
     max_SR_sizes = results.loc['Maximum Sharpe Ratio', tickers]
     min_vol_sizes = results.loc['Minimum volatility', tickers]
 
-    fig1, ax1 = plt.subplots()
-    ax1.pie(max_SR_sizes, labels=labels, autopct='%1.1f%%', startangle=90)
-    ax1.axis('equal')
-    fig2, ax2 = plt.subplots()
-    ax2.pie(min_vol_sizes, labels=labels, autopct='%1.1f%%', startangle=90)
-    ax2.axis('equal')
-    st.pyplot(fig1)
-    st.pyplot(fig2)
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write("**Maximum Sharpe Ratio stock allocation**")
+        fig1, ax1 = plt.subplots()
+        ax1.pie(max_SR_sizes, labels=labels, autopct='%1.1f%%', startangle=90)
+        ax1.axis('equal')
+        st.pyplot(fig1)
+    with col2:
+        st.write("**Minimum volatility stock allocation**")
+        fig2, ax2 = plt.subplots()
+        ax2.pie(min_vol_sizes, labels=labels, autopct='%1.1f%%', startangle=90)
+        ax2.axis('equal')
+        st.pyplot(fig2)
 
+
+    # Efficient frontier
     max_SR_results, max_SR_returns, max_SR_std, max_SR_allocation, min_volatility_results, min_volatility_returns, min_volatility_std, min_volatility_allocation, efficient_list, target_returns = po.calculatedResults(mean_returns, cov_matrix, risk_free_rate, constraint_set)
 
     #Max SR
@@ -103,4 +127,4 @@ if(st.button("Calculate the results")):
     efficient_graph = go.Figure(data=data, layout=layout)
     st.plotly_chart(efficient_graph)
 else:
-    st.text("Press the button to calculate the optimized Portfolio values")
+    st.write("Press the button to calculate the optimized Portfolio values")
